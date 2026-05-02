@@ -3,22 +3,32 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     public Transform target;
-    public Vector3 offset = new Vector3(0f, 25f, -25f);
-    public float smoothSpeed = 5f;
+    public Vector3 offset = new Vector3(0, 18, -14);
+    public float smoothSpeed = 8f;
 
-    private void LateUpdate()
+    // Wall collision
+    public float minDistance = 1.5f;  // how close camera can get to player
+    public LayerMask collisionLayers; // set to "Default" in Inspector
+
+    void LateUpdate()
     {
-        if (target == null)
-            return;
+        if (target == null) return;
 
-        Vector3 desiredPosition = target.position + offset;
+        Vector3 desiredPos = target.position + offset;
 
-        transform.position = Vector3.Lerp(
-            transform.position,
-            desiredPosition,
-            smoothSpeed * Time.deltaTime
-        );
+        // Raycast from player toward desired camera position
+        Vector3 dir = desiredPos - target.position;
+        float desiredDist = dir.magnitude;
 
-        transform.LookAt(target);
+        RaycastHit hit;
+        if (Physics.Raycast(target.position, dir.normalized, out hit, desiredDist, collisionLayers))
+        {
+            // Wall found — pull camera in front of it
+            float safeDistance = Mathf.Max(hit.distance - 0.3f, minDistance);
+            desiredPos = target.position + dir.normalized * safeDistance;
+        }
+
+        transform.position = Vector3.Lerp(transform.position, desiredPos, smoothSpeed * Time.deltaTime);
+        transform.LookAt(target.position + Vector3.up * 1.5f);
     }
 }
