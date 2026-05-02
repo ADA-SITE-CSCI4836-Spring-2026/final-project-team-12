@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (GameManager.Instance.gameOver)
+        if (GameManager.Instance == null || !GameManager.Instance.IsGamePlaying())
             return;
 
         cooldownTimer -= Time.deltaTime;

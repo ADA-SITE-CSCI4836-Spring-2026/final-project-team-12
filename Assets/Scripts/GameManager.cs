@@ -5,6 +5,17 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    public enum GamePhase
+    {
+        MainMenu,
+        Instructions,
+        Playing,
+        Finished
+    }
+
+    [Header("Game Phase")]
+    public GamePhase currentPhase = GamePhase.MainMenu;
+
     [Header("Game Values")]
     public float currentTime = 30f;
     public int debt = 0;
@@ -30,6 +41,8 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        currentPhase = GamePhase.MainMenu;
+
         if (timeCollector != null)
             timeCollector.SetActive(false);
 
@@ -45,7 +58,9 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
             RestartGame();
 
-        // Borrow time with B
+        if (currentPhase != GamePhase.Playing)
+            return;
+
         if (Input.GetKeyDown(KeyCode.B))
             BorrowTime();
 
@@ -61,9 +76,26 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public bool IsGamePlaying()
+    {
+        return currentPhase == GamePhase.Playing && !gameOver;
+    }
+
+    public void GoToInstructions()
+    {
+        currentPhase = GamePhase.Instructions;
+        gameMessage = "";
+    }
+
+    public void StartGame()
+    {
+        currentPhase = GamePhase.Playing;
+        gameMessage = "Collect 3 Time Cores and escape!";
+    }
+
     public void BorrowTime()
     {
-        if (gameOver)
+        if (!IsGamePlaying())
             return;
 
         if (debt >= maxDebt)
@@ -82,13 +114,13 @@ public class GameManager : MonoBehaviour
 
     public void AddTime(float amount)
     {
-        if (!gameOver)
+        if (IsGamePlaying())
             currentTime += amount;
     }
 
     public void RemoveTime(float amount)
     {
-        if (gameOver)
+        if (!IsGamePlaying())
             return;
 
         currentTime -= amount;
@@ -102,40 +134,40 @@ public class GameManager : MonoBehaviour
 
     public void AddKey()
     {
-        if (!gameOver)
+        if (IsGamePlaying())
             keysCollected++;
     }
 
     private void ApplyDebtEffects()
     {
-if (debt >= 2)
-{
-    foreach (GameObject trap in debtTraps)
-    {
-        if (trap != null)
-            trap.SetActive(true);
-    }
+        if (debt >= 2)
+        {
+            foreach (GameObject trap in debtTraps)
+            {
+                if (trap != null)
+                    trap.SetActive(true);
+            }
 
-    gameMessage = "Debt Level 2: Extra traps activated!";
-}
+            gameMessage = "Debt Level 2: Extra traps activated!";
+        }
 
-if (debt >= 3 && timeCollector != null)
-{
-    timeCollector.SetActive(true);
-    gameMessage = "Debt Level 3: Time Collector is hunting you!";
-}
+        if (debt >= 3 && timeCollector != null)
+        {
+            timeCollector.SetActive(true);
+            gameMessage = "Debt Level 3: Time Collector is hunting you!";
+        }
 
-if (debt >= 4)
-{
-    drainMultiplier = 1.5f;
-    gameMessage = "Debt Level 4: Time drains faster!";
-}
+        if (debt >= 4)
+        {
+            drainMultiplier = 1.5f;
+            gameMessage = "Debt Level 4: Time drains faster!";
+        }
 
-if (debt >= 5)
-{
-    drainMultiplier = 2f;
-    gameMessage = "Debt Level 5: Final debt crisis!";
-}
+        if (debt >= 5)
+        {
+            drainMultiplier = 2f;
+            gameMessage = "Debt Level 5: Final debt crisis!";
+        }
 
         if (timeCollector != null)
         {
@@ -148,19 +180,20 @@ if (debt >= 5)
 
     public void TryWin()
     {
-        if (gameOver)
+        if (!IsGamePlaying())
             return;
 
         if (keysCollected >= keysNeeded)
             WinGame();
         else
-            gameMessage = "Need more Time Keys!";
+            gameMessage = "Need more Time Cores!";
     }
 
     private void WinGame()
     {
         gameOver = true;
         playerWon = true;
+        currentPhase = GamePhase.Finished;
         gameMessage = "You escaped Time Debt!";
     }
 
@@ -168,23 +201,12 @@ if (debt >= 5)
     {
         gameOver = true;
         playerWon = false;
+        currentPhase = GamePhase.Finished;
         gameMessage = "Time Debt collected you!";
     }
 
     public void RestartGame()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
-
-    private void OnGUI()
-    {
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 30;
-        style.normal.textColor = Color.white;
-
-        GUI.Label(new Rect(20, 20, 500, 50), "TIME: " + Mathf.CeilToInt(currentTime), style);
-        GUI.Label(new Rect(20, 60, 500, 50), "DEBT: " + debt + "/" + maxDebt, style);
-        GUI.Label(new Rect(20, 100, 500, 50), "KEYS: " + keysCollected + "/" + keysNeeded, style);
-        GUI.Label(new Rect(20, 140, 900, 50), "MESSAGE: " + gameMessage, style);
     }
 }
